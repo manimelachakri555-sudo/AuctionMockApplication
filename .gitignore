@@ -6,3 +6,17 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Service account keys and certificates
+*.pem
+*.key
+service-account*.json
+serviceAccount*.json
+*-credentials.json
+
+# Local runtime scratch files and active room databases
+data/rooms/
+
+# Firebase applet live credentials (keep template committed)
+firebase-applet-config.json
+!firebase-applet-config.example.json

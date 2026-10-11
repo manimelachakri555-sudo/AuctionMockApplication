@@ -1,9 +1,10 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Connectivity test document
+    // Connectivity test document (Read-only for public health checks)
     match /test/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false;
     }
 
     // Authenticated user profile documents
@@ -14,29 +15,30 @@ service cloud.firestore {
     }
 
     // Publicly readable master data (Player Pool, Sets, Teams, Rosters)
+    // Protected against client tampering: write is strictly false for client SDKs
     match /players/{playerId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if false;
     }
 
     match /teams/{teamId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if false;
     }
 
     match /teamRoster/{rosterId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if false;
     }
 
     match /auctionSets/{setId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if false;
     }
 
     match /auctionPlayers/{apId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if false;
     }
 
     // Auction rooms and games
@@ -73,11 +75,14 @@ service cloud.firestore {
     }
 
     match /playerVerification/{pvId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow write: if false;
     }
 
     match /auditLogs/{logId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if false;
     }
   }
 }
