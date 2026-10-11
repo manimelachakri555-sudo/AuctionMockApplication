@@ -1,0 +1,94 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated Google user profile in Firestore",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "lastLoginAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Player": {
+      "title": "Player",
+      "description": "Master player record with date of birth, age, verified image and statistics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "dateOfBirth": { "type": "string" },
+        "age": { "type": "number" },
+        "role": { "type": "string" },
+        "isOverseas": { "type": "boolean" },
+        "cappedStatus": { "type": "string" },
+        "currentTeam": { "type": "string" },
+        "basePrice": { "type": "number" }
+      },
+      "required": ["id", "name"]
+    },
+    "Team": {
+      "title": "Team",
+      "description": "IPL franchise record",
+      "type": "object",
+      "properties": {
+        "teamId": { "type": "string" },
+        "name": { "type": "string" },
+        "shortName": { "type": "string" },
+        "purse": { "type": "number" }
+      },
+      "required": ["teamId", "name"]
+    },
+    "TeamRoster": {
+      "title": "TeamRoster",
+      "description": "Franchise-player assignment relationship",
+      "type": "object",
+      "properties": {
+        "teamId": { "type": "string" },
+        "playerId": { "type": "string" },
+        "season": { "type": "number" },
+        "rosterStatus": { "type": "string" }
+      },
+      "required": ["teamId", "playerId"]
+    },
+    "AuctionRoom": {
+      "title": "AuctionRoom",
+      "description": "Live IPL auction room metadata",
+      "type": "object",
+      "properties": {
+        "roomCode": { "type": "string" },
+        "hostUid": { "type": "string" },
+        "gameMode": { "type": "string" },
+        "stage": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["roomCode", "hostUid"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles stored and indexed by Firebase UID"
+    },
+    "/rooms/{roomCode}": {
+      "schema": "AuctionRoom",
+      "description": "Persistent auction room states"
+    },
+    "/players/{playerId}": {
+      "schema": "Player",
+      "description": "Centralized master player pool"
+    },
+    "/teams/{teamId}": {
+      "schema": "Team",
+      "description": "IPL franchises"
+    },
+    "/teamRoster/{rosterId}": {
+      "schema": "TeamRoster",
+      "description": "Team roster player assignments"
+    }
+  }
+}

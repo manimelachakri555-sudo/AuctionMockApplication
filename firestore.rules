@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Connectivity test document
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
+    // Authenticated user profile documents
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false;
+    }
+
+    // Publicly readable master data (Player Pool, Sets, Teams, Rosters)
+    match /players/{playerId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /teams/{teamId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /teamRoster/{rosterId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /auctionSets/{setId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /auctionPlayers/{apId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Auction rooms and games
+    match /rooms/{roomCode} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /games/{gameId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /gameParticipants/{participantId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /gameRetentions/{retId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /gameAuctionQueue/{queueId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /gamePlayerState/{stateId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /bids/{bidId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /auctionResults/{resultId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /playerVerification/{pvId} {
+      allow read, write: if request.auth != null;
+    }
+
+    match /auditLogs/{logId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

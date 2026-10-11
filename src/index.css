@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #080D1C;
+    color: #FFFFFF;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply antialiased selection:bg-[#FFC400] selection:text-slate-950 min-h-screen overflow-x-hidden;
+  }
+}
+
+.font-display {
+  font-family: 'Bebas Neue', 'Anton', 'Oswald', sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.font-editorial {
+  font-family: 'Anton', 'Bebas Neue', 'Oswald', sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.font-tech {
+  font-family: 'Chakra Petch', monospace, sans-serif;
+}
+
+@keyframes hammerHit {
+  0% { transform: rotate(0deg); }
+  30% { transform: rotate(-35deg); }
+  70% { transform: rotate(45deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.animate-hammer {
+  animation: hammerHit 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes pulseGold {
+  0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 35px rgba(245, 158, 11, 0.9); }
+}
+
+.pulse-gold {
+  animation: pulseGold 2s infinite ease-in-out;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.7);
+}

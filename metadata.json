@@ -1,0 +1,6 @@
+{
+  "name": "IPL Mega Auction Live - Real-Time Multiplayer Mock Auctioneer",
+  "description": "Interactive real-time multiplayer IPL Mock Auction with live WebSocket bidding, Auctioneer hammer, official RTM twist rules, dynamic purse calculations, and squad rating leaderboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
