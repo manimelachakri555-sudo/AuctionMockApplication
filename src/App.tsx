@@ -20,13 +20,15 @@ import { exportSquadsToCSV } from './utils/squadExport';
 import { INITIAL_PLAYERS } from './data/playersData';
 import { useAuctionSocket } from './hooks/useAuctionSocket';
 import { GameMode, TeamId, UserProfile } from './types/auction';
-import { AlertCircle, Sparkles, MessageSquare, Gavel, Search, Bot } from 'lucide-react';
+import { AlertCircle, Sparkles, MessageSquare, Gavel, Search, Bot, Loader2 } from 'lucide-react';
 import {
   signOutFirebaseUser,
   onFirebaseAuthStateChanged,
+  checkRedirectSignInResult,
 } from './firebase/authService';
 
 export default function App() {
+  const [isAuthInitializing, setIsAuthInitializing] = useState(true);
   const [user, setUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('ipl_auction_user');
     if (saved) {
@@ -103,27 +105,46 @@ export default function App() {
     user,
   });
 
-  // Listen to Firebase Auth state
+  // Listen to Firebase Auth state & process any pending redirect sign-in
   useEffect(() => {
+    let isMounted = true;
+
+    // Process redirect result if returning from redirect OAuth flow (e.g. mobile/iframe)
+    checkRedirectSignInResult()
+      .then((redirectUser) => {
+        if (isMounted && redirectUser) {
+          setUser(redirectUser);
+          localStorage.setItem('ipl_auction_user', JSON.stringify(redirectUser));
+          setIsAuthInitializing(false);
+        }
+      })
+      .catch((err) => {
+        console.warn('[Auth] Redirect sign-in result check error:', err);
+      });
+
     const unsubscribe = onFirebaseAuthStateChanged((firebaseUser) => {
+      if (!isMounted) return;
       if (firebaseUser) {
         setUser((prev) => {
           if (!prev) return firebaseUser;
           return {
             ...firebaseUser,
-            selectedTeamId: prev.selectedTeamId,
+            selectedTeamId: prev.selectedTeamId || firebaseUser.selectedTeamId,
           };
         });
+        localStorage.setItem('ipl_auction_user', JSON.stringify(firebaseUser));
       } else {
-        // If logged out from Firebase, clear active session
+        // If unauthenticated in Firebase, clear active user state
         setUser(null);
-        setActiveRoomCode(null);
         localStorage.removeItem('ipl_auction_user');
-        localStorage.removeItem('ipl_auction_room');
       }
+      setIsAuthInitializing(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -175,6 +196,7 @@ export default function App() {
   const handleGoogleSignInSuccess = (newUser: UserProfile) => {
     setUser(newUser);
     localStorage.setItem('ipl_auction_user', JSON.stringify(newUser));
+    setIsAuthInitializing(false);
   };
 
   const handleSignOut = async () => {
@@ -277,11 +299,6 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [activeRoomCode]);
 
-  // If user is not signed in yet, display clean dedicated Google Auth Landing Page
-  if (!user) {
-    return <GoogleSignInPage onSignInSuccess={handleGoogleSignInSuccess} />;
-  }
-
   // User's assigned franchise in this room session
   const userAssignedTeamId =
     user?.selectedTeamId ||
@@ -296,6 +313,28 @@ export default function App() {
       setUser((prev) => (prev ? { ...prev, selectedTeamId: userAssignedTeamId } : null));
     }
   }, [room, user?.id, userAssignedTeamId]);
+
+  // Loading state while verifying active session on initial mount
+  if (isAuthInitializing && !user) {
+    return (
+      <div className="min-h-screen w-full bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-amber-600 via-amber-400 to-yellow-200 p-1 mb-4 shadow-xl shadow-amber-500/20 animate-pulse">
+          <div className="w-full h-full bg-slate-950 rounded-[20px] flex items-center justify-center">
+            <Gavel className="w-8 h-8 text-amber-400" />
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-amber-400 font-tech text-xs tracking-widest uppercase">
+          <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+          <span>INITIALIZING IPL AUCTION ARENA...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is not signed in yet, display clean dedicated Google Auth Landing Page
+  if (!user) {
+    return <GoogleSignInPage onSignInSuccess={handleGoogleSignInSuccess} />;
+  }
 
   const handleConfirmTeamSelection = (teamId: TeamId) => {
     setUser((prev) => (prev ? { ...prev, selectedTeamId: teamId } : null));

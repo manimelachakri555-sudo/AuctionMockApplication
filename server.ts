@@ -1954,7 +1954,12 @@ wss.on('connection', (ws: WebSocket) => {
         // Verify host permissions on backend
         const meta = socketMetadata.get(ws);
         const requestingUserId = userId || meta?.userId;
-        if (!requestingUserId || room.hostUserId !== requestingUserId) {
+        const isHost =
+          requestingUserId &&
+          (room.hostUserId === requestingUserId ||
+            room.hostUid === requestingUserId ||
+            room.participants?.some((p) => p.uid === requestingUserId && p.isHost));
+        if (!isHost) {
           ws.send(JSON.stringify({
             type: 'ERROR',
             payload: { message: 'Unauthorized: Only the room host can skip players.' },
@@ -2015,7 +2020,12 @@ wss.on('connection', (ws: WebSocket) => {
         // Verify host permissions on backend
         const meta = socketMetadata.get(ws);
         const requestingUserId = userId || meta?.userId;
-        if (!requestingUserId || room.hostUserId !== requestingUserId) {
+        const isHost =
+          requestingUserId &&
+          (room.hostUserId === requestingUserId ||
+            room.hostUid === requestingUserId ||
+            room.participants?.some((p) => p.uid === requestingUserId && p.isHost));
+        if (!isHost) {
           ws.send(JSON.stringify({
             type: 'ERROR',
             payload: { message: 'Unauthorized: Only the room host can end the auction.' },

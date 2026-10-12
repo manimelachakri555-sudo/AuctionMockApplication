@@ -14,17 +14,20 @@ export const GoogleSignInPage: React.FC<GoogleSignInPageProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleContinueWithGoogle = async () => {
+    if (isAuthenticating) return;
     try {
       setIsAuthenticating(true);
       setErrorMessage(null);
       const user = await signInWithGoogleOAuth();
-      onSignInSuccess(user);
+      if (user && user.id) {
+        onSignInSuccess(user);
+      }
     } catch (err: any) {
       console.error('Google Sign-In failed:', err);
       if (err?.code === 'auth/popup-closed-by-user') {
         setErrorMessage('Sign-in cancelled. Please click the button again to continue with Google.');
       } else if (err?.code === 'auth/popup-blocked') {
-        setErrorMessage('Popup blocked by browser. Please allow popups for this site and try again.');
+        setErrorMessage('Redirecting to Google Sign-In...');
       } else {
         setErrorMessage(err?.message || 'Authentication failed. Please try again.');
       }
