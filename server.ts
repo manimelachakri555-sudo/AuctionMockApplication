@@ -223,12 +223,26 @@ function scheduleRtmStepTimeout(roomId: string, step: string, delayMs = 12000) {
 function scheduleAutoNextPlayer(roomId: string, delayMs = 2000) {
   clearAutoProgression(roomId);
   const room = rooms.get(roomId);
-  if (room && room.auctionPaused) {
+  if (!room) return;
+
+  const isPlayerSettled =
+    room.currentPlayer &&
+    (room.currentPlayer.status === 'SOLD' ||
+      room.currentPlayer.status === 'UNSOLD' ||
+      room.currentPlayer.status === 'SKIPPED');
+
+  // Auto-progression can ONLY be scheduled after a player is finalized (SOLD/UNSOLD/SKIPPED)
+  if (!isPlayerSettled) {
+    return;
+  }
+
+  if (room.auctionPaused) {
     room.pendingAutoProgression = true;
     return;
   }
 
   const timeout = setTimeout(() => {
+    autoProgressionTimeouts.delete(roomId);
     executeNextPlayerProgression(roomId);
   }, delayMs);
 
@@ -238,6 +252,13 @@ function scheduleAutoNextPlayer(roomId: string, delayMs = 2000) {
 function executeNextPlayerProgression(roomId: string) {
   const room = rooms.get(roomId);
   if (!room || room.stage === 'ENDED' || room.auctionPaused) return;
+
+  // STRICT INTEGRITY GUARD: The current player MUST be finalized (SOLD, UNSOLD, or SKIPPED)
+  // before advancing to the next player! An active UPCOMING player being bid on must NEVER be jumped!
+  if (room.currentPlayer && room.currentPlayer.status === 'UPCOMING') {
+    console.warn(`[INTEGRITY GUARD] Refusing to advance player: ${room.currentPlayer.name} is still UPCOMING in active bidding.`);
+    return;
+  }
 
   const currentSetNo = room.currentPlayer?.setNo;
   const currentSetName = room.currentPlayer?.setName || room.currentPlayer?.set;
@@ -297,6 +318,9 @@ function executeNextPlayerProgression(roomId: string) {
 function loadPlayerAtIndex(roomId: string, index: number) {
   const room = rooms.get(roomId);
   if (!room || index >= room.players.length) return;
+
+  clearAutoProgression(roomId);
+  room.pendingAutoProgression = false;
 
   room.currentPlayerIndex = index;
   room.currentPlayer = room.players[index];
@@ -684,6 +708,14 @@ function loadPersistedRooms() {
           const cleanRoomId = room.roomId.toUpperCase().trim();
           if (room.auctionPaused) {
             room.timerRunning = false;
+            const isSettled =
+              room.currentPlayer &&
+              (room.currentPlayer.status === 'SOLD' ||
+                room.currentPlayer.status === 'UNSOLD' ||
+                room.currentPlayer.status === 'SKIPPED');
+            if (!isSettled) {
+              room.pendingAutoProgression = false;
+            }
           }
           rooms.set(cleanRoomId, room);
           if (!roomSockets.has(cleanRoomId)) {
@@ -764,11 +796,19 @@ function handleRoomPauseToggle(
     room.timerStartedAt = now;
     room.timer = Math.ceil(remainingMs / 1000);
 
-    // 2. FREEZE AUTOMATIC PLAYER PROGRESSION
+    // 2. FREEZE AUTOMATIC PLAYER PROGRESSION (ONLY IF CURRENT PLAYER IS ALREADY SETTLED)
+    const isPlayerSettled =
+      room.currentPlayer &&
+      (room.currentPlayer.status === 'SOLD' ||
+        room.currentPlayer.status === 'UNSOLD' ||
+        room.currentPlayer.status === 'SKIPPED');
+
     if (autoProgressionTimeouts.has(cleanRoomId)) {
       clearTimeout(autoProgressionTimeouts.get(cleanRoomId)!);
       autoProgressionTimeouts.delete(cleanRoomId);
-      room.pendingAutoProgression = true;
+      room.pendingAutoProgression = !!isPlayerSettled;
+    } else {
+      room.pendingAutoProgression = false;
     }
 
     // 3. FREEZE RTM COUNTDOWN
@@ -785,10 +825,18 @@ function handleRoomPauseToggle(
       room.timerStartedAt = Date.now();
     }
 
-    // Resume pending auto progression if was waiting
-    if (room.pendingAutoProgression) {
+    // Resume pending auto progression ONLY IF player was already settled and waiting to advance
+    const isPlayerSettled =
+      room.currentPlayer &&
+      (room.currentPlayer.status === 'SOLD' ||
+        room.currentPlayer.status === 'UNSOLD' ||
+        room.currentPlayer.status === 'SKIPPED');
+
+    if (room.pendingAutoProgression && isPlayerSettled) {
       room.pendingAutoProgression = false;
       scheduleAutoNextPlayer(cleanRoomId, 1500);
+    } else {
+      room.pendingAutoProgression = false;
     }
 
     // Resume pending RTM countdown if active
@@ -1805,6 +1853,8 @@ wss.on('connection', (ws: WebSocket) => {
         }
 
         // ACCEPT THE BID!
+        clearAutoProgression(room.roomId);
+        room.pendingAutoProgression = false;
         room.currentBid = bidToPlace;
         room.leadingTeamId = authoritativeTeamId;
         room.timer = 10; // Reset countdown to 10s

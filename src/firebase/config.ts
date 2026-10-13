@@ -8,7 +8,7 @@ const fileConfig = (configModules['/firebase-applet-config.json'] as any)?.defau
 const fallbackConfig: Record<string, string> = {
   projectId: 'primordial-hour-shnbb',
   appId: '1:177862198838:web:8d8f3eb1c3eb4904807a97',
-  apiKey: 'AIzaSyAuLjRS2VlK1u4U6A-uEZRTblf1i6BcNdY',
+  apiKey: '',
   authDomain: 'primordial-hour-shnbb.firebaseapp.com',
   firestoreDatabaseId: 'ai-studio-iplmegaauctionli-7414f50a-2c58-4845-8773-6e282bdb3171',
   storageBucket: 'primordial-hour-shnbb.firebasestorage.app',
